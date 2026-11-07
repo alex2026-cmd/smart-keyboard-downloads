@@ -37,10 +37,10 @@ const root='https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downlo
 const el=id=>document.getElementById(id);
 async function json(name) {
   // Anonymous GitHub REST API has strict rate limits (HTTP 403); use public static files instead.
-  const stamp = Math.floor(Date.now() / 120000);
+  const stamp = Date.now();
   const urls = [
-    'https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/refs/heads/main/' + name + '?v=' + stamp,
-    'https://cdn.jsdelivr.net/gh/alex2026-cmd/smart-keyboard-downloads@main/' + name + '?v=' + stamp
+    'https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/' + name + '?refresh=' + stamp,
+    'https://cdn.jsdelivr.net/gh/alex2026-cmd/smart-keyboard-downloads@main/' + name + '?refresh=' + stamp
   ];
   let lastError;
   for (const url of urls) {
