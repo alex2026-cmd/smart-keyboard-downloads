@@ -18,14 +18,14 @@ a.secondary{background:#eee8fa;color:#603696}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}#error{display:none;background:#fff1ee;color:#9b3434;border-radius:12px;padding:12px;margin:20px 0}
 footer{margin:25px 0;font-size:13px;color:#766c86}
 </style></head><body>
-<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p style="font-weight:700;color:#6c3ab2">Ontwikkelstatus en gepubliceerde versie zijn verschillend</p><p>Links de gepubliceerde app-versie; rechts de laatst gebouwde ontwikkelversie.</p></div><span id="connection" class="badge">Verbinden…</span></header>
+<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p>Actuele release en GitHub-buildstatus · automatisch vernieuwd</p></div><span id="connection" class="badge">Verbinden…</span></header>
 <div id="error" role="alert"></div>
 <section class="grid">
-<div class="card"><h2>STABIELE VERSIE — in de app</h2><div id="version" class="number">—</div><span id="releaseState" class="pill warn">Laden…</span></div>
-<div class="card"><h2>NIEUWE VERSIE — GitHub-build</h2><div id="build" class="number">—</div><small>Deze testversie verschijnt pas in de app na publicatie.</small><span id="buildState" class="pill warn">Nog geen status</span></div>
+<div class="card"><h2>Gepubliceerde app-versie</h2><div id="version" class="number">—</div><span id="releaseState" class="pill warn">Laden…</span></div>
+<div class="card"><h2>Laatste ontwikkelbuild</h2><div id="build" class="number">—</div><span id="buildState" class="pill warn">Nog geen status</span></div>
 <div class="card"><h2>Laatste update</h2><div id="lastUpdate" class="number" style="font-size:22px">—</div><small>De gegevens verversen elke 30 seconden.</small></div>
 </section>
-<div class="card"><h2>Voortgang</h2><div id="progressLabel" class="row"><strong>Gepubliceerde versie beschikbaar</strong><span>Controleren…</span></div><div class="progress" role="progressbar" aria-label="Releaseproces" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="bar"></div></div><small>De balk toont bevestigde release-stappen, geen geschatte programmeertijd.</small></div>
+<div class="card"><h2>Voortgang</h2><div id="progressLabel" class="row"><strong>Nieuwe versie vrijgeven</strong><span>Controleren…</span></div><div class="progress" role="progressbar" aria-label="Releaseproces" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="bar"></div></div><small>De balk toont bevestigde release-stappen, geen geschatte programmeertijd.</small></div>
 <section class="grid">
 <div class="card"><h2>Releasegegevens</h2><div class="row">Downloadmanifest <span id="manifest" class="value">Controleren…</span></div><div class="row">Bestandcontrole (SHA-256) <span id="checksum" class="value">—</span></div><div class="row">Laatste publicatie <span id="publication" class="value">—</span></div></div>
 <div class="card"><h2>Ontwikkelstatus</h2><div class="row">GitHub-broncode <span class="value">Privé</span></div><div class="row">Ontwikkelbranch <span class="value">development/next-features</span></div><div class="row">Laatste build <span id="result" class="value">Niet beschikbaar</span></div></div>
@@ -35,7 +35,7 @@ footer{margin:25px 0;font-size:13px;color:#766c86}
 <script>
 const root='https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/';
 const el=id=>document.getElementById(id);
-async function json(name){const r=await fetch(root+name+'?nocache='+Date.now()+'-'+Math.random(),{cache:'no-store'});if(!r.ok)throw Error(name+': HTTP '+r.status);return r.json();}
+async function json(name){const r=await fetch(root+name+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(name+': HTTP '+r.status);return r.json();}
 function setState(id,message,kind){el(id).textContent=message;el(id).className='pill'+(kind?' '+kind:'');}
 async function refresh(){
  el('connection').textContent='Vernieuwen…';el('error').style.display='none';
@@ -46,12 +46,18 @@ async function refresh(){
   el('version').textContent='v'+release.version;setState('releaseState','Gepubliceerd','');
   el('manifest').textContent='Beschikbaar';el('checksum').textContent=/^[a-f0-9]{64}$/i.test(release.sha256||'')?'Opgegeven':'Ongeldig';
   el('publication').textContent='v'+release.version;
-  el('progressLabel').lastElementChild.textContent='Release gepubliceerd · 100%';
-  el('bar').style.width='100%';el('bar').parentNode.setAttribute('aria-valuenow','100');ok=true;
+  el('progressLabel').lastElementChild.textContent='Release '+release.version+' beschikbaar';
+  el('bar').style.width='100%';el('bar').parentNode.setAttribute('aria-valuenow','100');window.publishedVersion=release.version;ok=true;
  }catch(e){el('manifest').textContent='Niet bereikbaar';setState('releaseState','Onbekend','warn');el('error').textContent='Releasegegevens: '+e.message;el('error').style.display='block';}
  try{
   const info=await json('build-status.json');
   el('build').textContent=info.version?'v'+info.version:'—';
+  if(info.version && window.publishedVersion){
+    const pub=window.publishedVersion.split('.').map(Number), dev=info.version.split('.').map(Number);
+    const newer=dev.some((n,i)=>n>pub[i] && dev.slice(0,i).every((x,j)=>x===pub[j]));
+    if(newer){el('progressLabel').lastElementChild.textContent='Build '+info.version+' nog niet gepubliceerd';el('bar').style.width='70%';el('bar').parentNode.setAttribute('aria-valuenow','70');}
+    else{el('progressLabel').lastElementChild.textContent='Versie '+window.publishedVersion+' gepubliceerd';el('bar').style.width='100%';el('bar').parentNode.setAttribute('aria-valuenow','100');}
+  }
   el('result').textContent=info.conclusion||info.status||'Onbekend';
   const good=info.conclusion==='success', bad=info.conclusion==='failure';
   setState('buildState',good?'Build geslaagd':bad?'Build mislukt':info.status||'Status onbekend',bad?'error':good?'':'warn');
