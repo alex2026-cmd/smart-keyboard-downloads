@@ -42,7 +42,7 @@ async function json(name) {
   const response = await fetch(url, { cache: 'no-store', redirect: 'follow' });
   if (!response.ok) throw Error(name + ': HTTP ' + response.status);
   const data = await response.json();
-  if (!data || !/^\\d+\\.\\d+\\.\\d+$/.test(data.version || ''))
+  if (!data || typeof data.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(data.version))
     throw Error(name + ': ongeldig versienummer');
   return data;
 }
