@@ -41,7 +41,7 @@ async function json(name){
   if(!r.ok)throw Error(name+': GitHub API HTTP '+r.status);
   const file=await r.json();
   if(file.encoding!=='base64'||!file.content)throw Error(name+': ongeldig GitHub-bestand');
-  return JSON.parse(atob(file.content.replace(/\\s/g,'')));
+  return JSON.parse(atob(file.content.replace(/\s/g,'')));
 }
 function setState(id,message,kind){el(id).textContent=message;el(id).className='pill'+(kind?' '+kind:'');}
 async function refresh(){
