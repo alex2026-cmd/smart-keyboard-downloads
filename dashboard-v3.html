@@ -18,12 +18,12 @@ a.secondary{background:#eee8fa;color:#603696}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}#error{display:none;background:#fff1ee;color:#9b3434;border-radius:12px;padding:12px;margin:20px 0}
 footer{margin:25px 0;font-size:13px;color:#766c86}
 </style></head><body>
-<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p>Actuele release en GitHub-buildstatus · automatisch vernieuwd</p></div><span id="connection" class="badge">Verbinden…</span></header>
+<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p>Live releasegegevens · automatisch vernieuwd</p></div><span id="connection" class="badge">Verbinden…</span></header>
 <div id="error" role="alert"></div>
 <section class="grid">
 <div class="card"><h2>Gepubliceerde app-versie</h2><div id="version" class="number">—</div><span id="releaseState" class="pill warn">Laden…</span></div>
 <div class="card"><h2>Laatste ontwikkelbuild</h2><div id="build" class="number">—</div><span id="buildState" class="pill warn">Nog geen status</span></div>
-<div class="card"><h2>Laatste update</h2><div id="lastUpdate" class="number" style="font-size:22px">—</div><small>De gegevens verversen elke 2 minuten.</small></div>
+<div class="card"><h2>Laatste update</h2><div id="lastUpdate" class="number" style="font-size:22px">—</div><small>De gegevens verversen elke 2 minuten via publieke releasebestanden.</small></div>
 </section>
 <div class="card"><h2>Voortgang</h2><div id="progressLabel" class="row"><strong>Nieuwe versie vrijgeven</strong><span>Controleren…</span></div><div class="progress" role="progressbar" aria-label="Releaseproces" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="bar"></div></div><small>De balk toont bevestigde release-stappen, geen geschatte programmeertijd.</small></div>
 <section class="grid">
@@ -36,27 +36,20 @@ footer{margin:25px 0;font-size:13px;color:#766c86}
 const root='https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/';
 const el=id=>document.getElementById(id);
 async function json(name) {
-  // Anonymous GitHub REST API has strict rate limits (HTTP 403); use public static files instead.
-  const stamp = Date.now();
-  const urls = [
-    'https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/' + name + '?refresh=' + stamp,
-    'https://cdn.jsdelivr.net/gh/alex2026-cmd/smart-keyboard-downloads@main/' + name + '?refresh=' + stamp
-  ];
-  let lastError;
-  for (const url of urls) {
-    try {
-      const response = await fetch(url, { cache: 'no-store' });
-      if (!response.ok) throw Error('HTTP ' + response.status);
-      const data = await response.json();
-      if (!data || !data.version) throw Error('Geen geldig versienummer');
-      return data;
-    } catch (error) { lastError = error; }
-  }
-  throw Error(name + ': gegevens niet bereikbaar (' + lastError.message + ')');
+  // Read the exact same official manifest endpoint as the Windows updater.
+  // Do not use anonymous GitHub REST API (rate-limited) or jsDelivr's stale @main cache.
+  const url = 'https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/' + name + '?_=' + Date.now();
+  const response = await fetch(url, { cache: 'no-store', redirect: 'follow' });
+  if (!response.ok) throw Error(name + ': HTTP ' + response.status);
+  const data = await response.json();
+  if (!data || !/^\\d+\\.\\d+\\.\\d+$/.test(data.version || ''))
+    throw Error(name + ': ongeldig versienummer');
+  return data;
 }
 function setState(id,message,kind){el(id).textContent=message;el(id).className='pill'+(kind?' '+kind:'');}
 async function refresh(){
  el('connection').textContent='Vernieuwen…';el('error').style.display='none';
+ window.publishedVersion = null;
  let ok=false;
  try{
   const release=await json('latest.json');
@@ -66,7 +59,7 @@ async function refresh(){
   el('publication').textContent='v'+release.version;
   el('progressLabel').lastElementChild.textContent='Release '+release.version+' beschikbaar';
   el('bar').style.width='100%';el('bar').parentNode.setAttribute('aria-valuenow','100');window.publishedVersion=release.version;ok=true;
- }catch(e){el('manifest').textContent='Niet bereikbaar';setState('releaseState','Onbekend','warn');el('error').textContent='Releasegegevens: '+e.message;el('error').style.display='block';}
+ }catch(e){el('version').textContent='—';el('publication').textContent='—';el('manifest').textContent='Niet bereikbaar';setState('releaseState','Status onbekend','warn');el('error').textContent='Releasegegevens tijdelijk niet bereikbaar: '+e.message;el('error').style.display='block';}
  try{
   const info=await json('build-status.json');
   el('build').textContent=info.version?'v'+info.version:'—';
@@ -81,8 +74,8 @@ async function refresh(){
   setState('buildState',good?'Build geslaagd':bad?'Build mislukt':info.status||'Status onbekend',bad?'error':good?'':'warn');
   if(info.updatedAt){const d=new Date(info.updatedAt);if(!isNaN(d))el('lastUpdate').textContent=d.toLocaleString('nl-NL');}
   ok=true;
- }catch(e){setState('buildState','Nog geen GitHub-status','warn');}
- el('connection').textContent=ok?'Live gegevens':'Verbinding mislukt';
+ }catch(e){el('build').textContent='—';el('result').textContent='Onbekend';setState('buildState','Status onbekend','warn');}
+ el('connection').textContent=ok && window.publishedVersion ? 'Actueel gecontroleerd' : 'Niet volledig gecontroleerd';
 }
 el('refresh').onclick=refresh;refresh();setInterval(refresh,120000);
 </script></body></html>
