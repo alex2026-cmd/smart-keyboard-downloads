@@ -35,7 +35,13 @@ footer{margin:25px 0;font-size:13px;color:#766c86}
 <script>
 const root='https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/';
 const el=id=>document.getElementById(id);
-async function json(name){const r=await fetch(root+name+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(name+': HTTP '+r.status);return r.json();}
+async function json(name){
+ const url='https://api.github.com/repos/alex2026-cmd/smart-keyboard-downloads/contents/'+encodeURIComponent(name)+'?ref=main&_='+Date.now();
+ const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/vnd.github+json'}});
+ if(!r.ok)throw Error(name+': HTTP '+r.status);
+ const file=await r.json();if(file.encoding!=='base64'||!file.content)throw Error('Ongeldig GitHub-bestand');
+ return JSON.parse(atob(file.content.replace(/\s/g,'')));
+}
 function setState(id,message,kind){el(id).textContent=message;el(id).className='pill'+(kind?' '+kind:'');}
 async function refresh(){
  el('connection').textContent='Vernieuwen…';el('error').style.display='none';
