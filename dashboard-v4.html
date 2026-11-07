@@ -18,12 +18,12 @@ a.secondary{background:#eee8fa;color:#603696}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}#error{display:none;background:#fff1ee;color:#9b3434;border-radius:12px;padding:12px;margin:20px 0}
 footer{margin:25px 0;font-size:13px;color:#766c86}
 </style></head><body>
-<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p>Live status via GitHub API · automatisch vernieuwd</p></div><span id="connection" class="badge">Verbinden…</span></header>
+<header><div><small>ONTWIKKELDASHBOARD</small><h1>Smart Keyboard Profiles</h1><p>Live releasegegevens · automatisch vernieuwd</p></div><span id="connection" class="badge">Verbinden…</span></header>
 <div id="error" role="alert"></div>
 <section class="grid">
 <div class="card"><h2>Gepubliceerde app-versie</h2><div id="version" class="number">—</div><span id="releaseState" class="pill warn">Laden…</span></div>
 <div class="card"><h2>Laatste ontwikkelbuild</h2><div id="build" class="number">—</div><span id="buildState" class="pill warn">Nog geen status</span></div>
-<div class="card"><h2>Laatste update</h2><div id="lastUpdate" class="number" style="font-size:22px">—</div><small>De gegevens verversen elke 30 seconden rechtstreeks via GitHub.</small></div>
+<div class="card"><h2>Laatste update</h2><div id="lastUpdate" class="number" style="font-size:22px">—</div><small>De gegevens verversen elke 2 minuten via publieke releasebestanden.</small></div>
 </section>
 <div class="card"><h2>Voortgang</h2><div id="progressLabel" class="row"><strong>Nieuwe versie vrijgeven</strong><span>Controleren…</span></div><div class="progress" role="progressbar" aria-label="Releaseproces" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="bar"></div></div><small>De balk toont bevestigde release-stappen, geen geschatte programmeertijd.</small></div>
 <section class="grid">
@@ -35,13 +35,24 @@ footer{margin:25px 0;font-size:13px;color:#766c86}
 <script>
 const root='https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/main/';
 const el=id=>document.getElementById(id);
-async function json(name){
-  const url='https://api.github.com/repos/alex2026-cmd/smart-keyboard-downloads/contents/'+encodeURIComponent(name)+'?ref=main&_='+Date.now();
-  const r=await fetch(url,{cache:'no-store',headers:{'Accept':'application/vnd.github+json'}});
-  if(!r.ok)throw Error(name+': GitHub API HTTP '+r.status);
-  const file=await r.json();
-  if(file.encoding!=='base64'||!file.content)throw Error(name+': ongeldig GitHub-bestand');
-  return JSON.parse(atob(file.content.replace(/\s/g,'')));
+async function json(name) {
+  // Anonymous GitHub REST API has strict rate limits (HTTP 403); use public static files instead.
+  const stamp = Math.floor(Date.now() / 120000);
+  const urls = [
+    'https://raw.githubusercontent.com/alex2026-cmd/smart-keyboard-downloads/refs/heads/main/' + name + '?v=' + stamp,
+    'https://cdn.jsdelivr.net/gh/alex2026-cmd/smart-keyboard-downloads@main/' + name + '?v=' + stamp
+  ];
+  let lastError;
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw Error('HTTP ' + response.status);
+      const data = await response.json();
+      if (!data || !data.version) throw Error('Geen geldig versienummer');
+      return data;
+    } catch (error) { lastError = error; }
+  }
+  throw Error(name + ': gegevens niet bereikbaar (' + lastError.message + ')');
 }
 function setState(id,message,kind){el(id).textContent=message;el(id).className='pill'+(kind?' '+kind:'');}
 async function refresh(){
@@ -73,5 +84,5 @@ async function refresh(){
  }catch(e){setState('buildState','Nog geen GitHub-status','warn');}
  el('connection').textContent=ok?'Live gegevens':'Verbinding mislukt';
 }
-el('refresh').onclick=refresh;refresh();setInterval(refresh,30000);
+el('refresh').onclick=refresh;refresh();setInterval(refresh,120000);
 </script></body></html>
