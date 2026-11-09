@@ -1,6 +1,6 @@
 {
-  "sha256": "fe6c7d7a1d96b0d02bc3550ca813f0f0c0bdd816f8c7fdb9fb036f8609172b90",
+  "sha256": "6a60e023ea78f607516525c06b59e0932cd0ad6b0be40c956e8e01910ce519ff",
   "notes": "Smart Keyboard Profiles update",
-  "version": "0.43.0",
-  "installerUrl": "https://github.com/alex2026-cmd/smart-keyboard-downloads/releases/download/v0.43.0/SmartKeyboardProfiles-Setup-0.43.0.exe"
+  "version": "0.43.1",
+  "installerUrl": "https://github.com/alex2026-cmd/smart-keyboard-downloads/releases/download/v0.43.1/SmartKeyboardProfiles-Setup-0.43.1.exe"
 }
