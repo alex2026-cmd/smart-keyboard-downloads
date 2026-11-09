@@ -1,8 +1,8 @@
 {
   "version": "0.42.3",
   "status": "completed",
-  "conclusion": "failure",
-  "updatedAt": "2026-11-09T13:21:34.139936+00:00",
-  "commit": "5c67f89",
-  "runUrl": "https://github.com/alex2026-cmd/smart-keyboard-profiles/actions/runs/42624608225"
+  "conclusion": "cancelled",
+  "updatedAt": "2026-11-09T13:23:30.448193+00:00",
+  "commit": "8a5588d",
+  "runUrl": "https://github.com/alex2026-cmd/smart-keyboard-profiles/actions/runs/42625031467"
 }
